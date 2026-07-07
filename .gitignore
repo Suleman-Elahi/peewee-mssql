@@ -88,3 +88,13 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# uv
+uv.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

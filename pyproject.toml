@@ -39,13 +39,13 @@ pyodbc = [
     "pyodbc>=4.0.0",
 ]
 async = [
-    "aioodbc>=0.15.0",
+    "aioodbc>=0.5.0",
     "greenlet>=1.0.0",
 ]
 all = [
     "pymssql>=2.1.0",
     "pyodbc>=4.0.0",
-    "aioodbc>=0.15.0",
+    "aioodbc>=0.5.0",
     "greenlet>=1.0.0",
 ]
 pool = []  # Pool support is built-in
