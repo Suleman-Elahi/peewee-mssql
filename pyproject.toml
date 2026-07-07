@@ -55,10 +55,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Suleman-Elahi/peewee-mssql/peewee-sqlserver"
-Documentation = "https://github.com/Suleman-Elahi/peewee-mssql/peewee-sqlserver#readme"
-Repository = "https://github.com/Suleman-Elahi/peewee-mssql/peewee-sqlserver"
-Issues = "https://github.com/Suleman-Elahi/peewee-mssql/peewee-sqlserver/issues"
+Homepage = "https://github.com/Suleman-Elahi/peewee-mssql"
+Documentation = "https://github.com/Suleman-Elahi/peewee-mssql"
+Repository = "https://github.com/Suleman-Elahi/peewee-mssql"
+Issues = "https://github.com/Suleman-Elahi/peewee-mssql/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["peewee_sqlserver"]
