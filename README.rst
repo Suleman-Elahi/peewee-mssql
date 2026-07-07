@@ -1,5 +1,5 @@
-peewee-mssql
-############
+peewee-sqlserver
+################
 
 Microsoft SQL Server adapter for Peewee ORM.
 
@@ -18,6 +18,13 @@ Features
 - MSSQL-specific SQL generation (TOP for LIMIT, OFFSET/FETCH NEXT for pagination)
 - Table hints (NOLOCK, UPDLOCK, HOLDLOCK, etc.)
 - Complete MSSQL data type support
+- JSON support (JsonField for SQL Server 2016+)
+- XML support (XmlField)
+- MERGE statement for upserts
+- Sequence support
+- Schema migrations
+- Full-text search (CONTAINS, FREETEXT)
+- Computed columns
 
 Requirements
 ============
@@ -36,16 +43,16 @@ Installation
 .. code-block:: console
 
     # With pymssql
-    $ pip install peewee-mssql[pymssql]
+    $ pip install peewee-sqlserver[pymssql]
 
     # With pyodbc (recommended)
-    $ pip install peewee-mssql[pyodbc]
+    $ pip install peewee-sqlserver[pyodbc]
 
     # For async support
-    $ pip install peewee-mssql[async]
+    $ pip install peewee-sqlserver[async]
 
     # All drivers
-    $ pip install peewee-mssql[all]
+    $ pip install peewee-sqlserver[all]
 
 Quick Start
 ===========
@@ -55,7 +62,7 @@ Using pymssql
 
 .. code-block:: python
 
-    from peewee_mssql import MssqlDatabase
+    from peewee_sqlserver import MssqlDatabase
 
     db = MssqlDatabase(
         'MyDatabase',
@@ -69,7 +76,7 @@ Using pyodbc (recommended)
 
 .. code-block:: python
 
-    from peewee_mssql import MssqlPyodbcDatabase
+    from peewee_sqlserver import MssqlPyodbcDatabase
 
     # With individual parameters
     db = MssqlPyodbcDatabase(
@@ -97,7 +104,7 @@ Defining Models
 .. code-block:: python
 
     from peewee import Model, CharField, IntegerField, DateTimeField, BooleanField
-    from peewee_mssql import MssqlDatabase
+    from peewee_sqlserver import MssqlDatabase
 
     db = MssqlDatabase('MyDatabase', server='localhost')
 
@@ -239,7 +246,7 @@ Transactions
 
 .. code-block:: python
 
-    from peewee_mssql import MssqlDatabase
+    from peewee_sqlserver import MssqlDatabase
 
     db = MssqlDatabase('MyDatabase', server='localhost')
 
@@ -304,7 +311,7 @@ SQL Server table hints are supported for read performance optimization:
 
 .. code-block:: python
 
-    from peewee_mssql import MSSQL_NOLOCK, MSSQL_UPDLOCK, MSSQL_HOLDLOCK
+    from peewee_sqlserver import MSSQL_NOLOCK, MSSQL_UPDLOCK, MSSQL_HOLDLOCK
 
     # Simple NOLOCK hint (avoids locks for reads)
     query = User.select().nolock()
@@ -338,7 +345,7 @@ Connection Pooling
 
 .. code-block:: python
 
-    from peewee_mssql import PooledMssqlDatabase
+    from peewee_sqlserver import PooledMssqlDatabase
 
     db = PooledMssqlDatabase(
         'MyDatabase',
@@ -357,7 +364,7 @@ Async Support
 .. code-block:: python
 
     import asyncio
-    from peewee_mssql import AsyncMssqlDatabase
+    from peewee_sqlserver import AsyncMssqlDatabase
 
     async def main():
         db = AsyncMssqlDatabase(
@@ -455,7 +462,7 @@ MSSQL-specific data types are supported:
 .. code-block:: python
 
     from peewee import Model
-    from peewee_mssql import MssqlDatabase
+    from peewee_sqlserver import MssqlDatabase
 
     class MyModel(Model):
         # Standard types
@@ -483,7 +490,7 @@ Table Introspection
 
 .. code-block:: python
 
-    from peewee_mssql import MssqlDatabase
+    from peewee_sqlserver import MssqlDatabase
 
     db = MssqlDatabase('MyDatabase', server='localhost')
 
@@ -516,7 +523,7 @@ For SQL Server 2005 and earlier:
 
 .. code-block:: python
 
-    from peewee_mssql import MssqlDatabase
+    from peewee_sqlserver import MssqlDatabase
 
     db = MssqlDatabase(
         'MyDatabase',
@@ -533,7 +540,7 @@ Error Handling
 .. code-block:: python
 
     from peewee import IntegrityError
-    from peewee_mssql import MssqlDatabase
+    from peewee_sqlserver import MssqlDatabase
 
     db = MssqlDatabase('MyDatabase', server='localhost')
 
@@ -581,6 +588,277 @@ AsyncMssqlDatabase Additional Parameters
 - ``pool_size`` - Maximum pool size (default: 10)
 - ``pool_min_size`` - Minimum pool size (default: 1)
 - ``acquire_timeout`` - Timeout for acquiring connection (default: 10)
+
+JSON Support
+============
+
+SQL Server 2016+ has native JSON support. Use ``JsonField`` to store and query JSON data:
+
+.. code-block:: python
+
+    from peewee import Model, CharField
+    from peewee_sqlserver import MssqlDatabase, JsonField
+
+    db = MssqlDatabase('MyDatabase', server='localhost')
+
+    class User(Model):
+        name = CharField()
+        data = JsonField(default={})
+
+        class Meta:
+            database = db
+
+    # Create with JSON data
+    User.create(name='John', data={'age': 30, 'city': 'NYC'})
+
+    # Query using JSON path
+    users = User.select().where(User.data['name'] == 'John')
+    users = User.select().where(User.data['age'] > 25)
+
+    # Access nested values
+    users = User.select().where(User.data['address']['city'] == 'NYC')
+
+    # Update JSON values
+    user = User.get_by_id(1)
+    user.data['age'] = 31
+    user.save()
+
+XML Support
+===========
+
+Use ``XmlField`` for SQL Server XML data type:
+
+.. code-block:: python
+
+    from peewee_sqlserver import XmlField
+
+    class Config(Model):
+        settings = XmlField()
+
+        class Meta:
+            database = db
+
+    # Query using XPath
+    configs = Config.select().where(
+        Config.settings.query('/root/element') == 'value'
+    )
+
+    # Extract value
+    configs = Config.select().where(
+        Config.settings.value('/root/@attr', 'nvarchar(100)') == 'test'
+    )
+
+    # Check existence
+    configs = Config.select().where(
+        Config.settings.exist('/root/element')
+    )
+
+Computed Columns
+================
+
+SQL Server supports computed (calculated) columns:
+
+.. code-block:: python
+
+    from peewee_sqlserver import ComputedField
+
+    class OrderItem(Model):
+        price = FloatField()
+        quantity = IntegerField()
+        total = ComputedField('price * quantity', persisted=True)
+
+        class Meta:
+            database = db
+
+    # The 'total' column is automatically calculated
+    item = OrderItem.create(price=10.0, quantity=5)
+    print(item.total)  # 50.0
+
+MERGE / Upsert
+===============
+
+SQL Server uses ``MERGE`` for upsert operations (INSERT or UPDATE):
+
+.. code-block:: python
+
+    from peewee_sqlserver import Merge, merge
+
+    # Using Merge class
+    merge_op = (Merge(target=User, source=staging)
+                .on(User.id == staging.id)
+                .when_matched_then_update(
+                    name=staging.name,
+                    email=staging.email
+                )
+                .when_not_matched_then_insert(
+                    id=staging.id,
+                    name=staging.name,
+                    email=staging.email
+                ))
+    merge_op.execute()
+
+    # Using convenience function
+    merge(
+        target=User,
+        source=staging,
+        on=User.id == staging.id,
+        update={User.name: staging.name},
+        insert={User.id: staging.id, User.name: staging.name}
+    ).execute()
+
+    # Simple single-row upsert
+    upsert = UpsertQuery(
+        model=User,
+        source={'id': 1, 'name': 'John', 'email': 'john@example.com'},
+        key_field='id'
+    )
+    upsert.execute()
+
+Sequences
+=========
+
+SQL Server sequences for generating unique IDs:
+
+.. code-block:: python
+
+    from peewee_sqlserver import Sequence, next_value, create_sequence
+
+    # Create a sequence
+    user_seq = create_sequence('user_id_seq', start_with=1, increment_by=1)
+    user_seq.create(db)
+
+    # Get next value
+    next_id = user_seq.next_value(db)
+
+    # Use in queries
+    query = User.select().where(User.id == next_value('user_id_seq'))
+
+    # With ORDER BY for distributed sequences
+    next_id = user_seq.next_value(db, over='created_at')
+
+    # Reset sequence
+    user_seq.reset(db, value=1)
+
+    # Drop sequence
+    user_seq.drop(db)
+
+Schema Migrations
+=================
+
+Lightweight schema migrations for SQL Server:
+
+.. code-block:: python
+
+    from peewee_sqlserver import MSSQLMigrator, migrate
+
+    db = MssqlDatabase('MyDatabase', server='localhost')
+    migrator = MSSQLMigrator(db)
+
+    # Add a column
+    migrate(
+        migrator.add_column('users', 'phone', CharField(max_length=20, null=True))
+    )
+
+    # Drop a column
+    migrate(
+        migrator.drop_column('users', 'phone')
+    )
+
+    # Rename a column
+    migrate(
+        migrator.rename_column('users', 'name', 'full_name')
+    )
+
+    # Add an index
+    migrate(
+        migrator.add_index('users', ('email',), unique=True)
+    )
+
+    # Drop an index
+    migrate(
+        migrator.drop_index('users', 'ix_users_email')
+    )
+
+    # Add NOT NULL constraint
+    migrate(
+        migrator.add_not_null('users', 'email')
+    )
+
+    # Multiple operations at once
+    migrate(
+        migrator.add_column('posts', 'title', CharField(max_length=200)),
+        migrator.add_column('posts', 'content', TextField()),
+        migrator.add_index('posts', ('title',)),
+    )
+
+Full-Text Search
+================
+
+SQL Server full-text search capabilities:
+
+.. code-block:: python
+
+    from peewee_sqlserver import contains, freetext, contains_table
+
+    # CONTAINS - exact word matching
+    articles = Article.select().where(
+        contains(Article.content, 'database')
+    )
+
+    # CONTAINS with multiple terms
+    articles = Article.select().where(
+        contains(Article.content, 'database AND server')
+    )
+
+    # CONTAINS with phrase
+    articles = Article.select().where(
+        contains(Article.content, '"SQL Server"')
+    )
+
+    # CONTAINS with prefix
+    articles = Article.select().where(
+        contains(Article.content, 'dat*')
+    )
+
+    # FREETEXT - meaning-based search
+    articles = Article.select().where(
+        freetext(Article.content, 'database performance tuning')
+    )
+
+    # CONTAINSTABLE - ranked results
+    from peewee_sqlserver import contains_table
+    from peewee import SQL
+
+    query = (Article
+             .select(Article, contains_table.rank.alias('rank'))
+             .join(contains_table(Article, ('title', 'content'), 'database'))
+             .order_by(SQL('rank').desc())
+             .limit(10))
+
+Locking Hints
+=============
+
+SQL Server table hints for concurrency control:
+
+.. code-block:: python
+
+    from peewee_sqlserver import MSSQL_NOLOCK, MSSQL_HOLDLOCK, MSSQL_UPDLOCK
+
+    # NOLOCK - read uncommitted
+    query = User.select().nolock()
+
+    # Multiple hints
+    query = User.select().hint(MSSQL_NOLOCK, MSSQL_UPDLOCK)
+
+    # HOLDLOCK - serializable isolation
+    query = User.select().hint(MSSQL_HOLDLOCK)
+
+    # Available hints:
+    # MSSQL_NOLOCK, MSSQL_UPDLOCK, MSSQL_HOLDLOCK
+    # MSSQL_READPAST, MSSQL_XLOCK, MSSQL_PAGLOCK
+    # MSSQL_TABLOCK, MSSQL_TABLOCKX
+    # MSSQL_READUNCOMMITTED, MSSQL_READCOMMITTED
+    # MSSQL_REPEATABLEREAD, MSSQL_SERIALIZABLE
 
 Changelog
 =========

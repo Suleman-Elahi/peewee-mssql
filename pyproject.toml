@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "peewee-mssql"
+name = "peewee-sqlserver"
 version = "1.0.0"
 description = "Microsoft SQL Server adapter for Peewee ORM"
 readme = "README.rst"
@@ -55,10 +55,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/cour4g3/peewee-mssql"
-Documentation = "https://github.com/cour4g3/peewee-mssql#readme"
-Repository = "https://github.com/cour4g3/peewee-mssql"
-Issues = "https://github.com/cour4g3/peewee-mssql/issues"
+Homepage = "https://github.com/yourusername/peewee-sqlserver"
+Documentation = "https://github.com/yourusername/peewee-sqlserver#readme"
+Repository = "https://github.com/yourusername/peewee-sqlserver"
+Issues = "https://github.com/yourusername/peewee-sqlserver/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["peewee_mssql"]
+packages = ["peewee_sqlserver"]
